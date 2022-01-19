@@ -87,4 +87,13 @@ public class Response {
             socketChannel.write(buffer);
         }
     }
+
+    public void outPut(String contect) throws IOException {
+        outputStream.write(contect.getBytes(StandardCharsets.UTF_8));
+    }
+
+    public void outPutByChannel(String contect) throws IOException {
+        ByteBuffer buffer = ByteBuffer.wrap(contect.getBytes(StandardCharsets.UTF_8));
+        socketChannel.write(buffer);
+    }
 }
