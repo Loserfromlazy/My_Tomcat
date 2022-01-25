@@ -19,6 +19,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * <p>
@@ -40,17 +44,27 @@ public class BootStrap {
         this.port = port;
     }
 
+
+
+    ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(10,
+            50,
+            100L,
+            TimeUnit.SECONDS,
+            new ArrayBlockingQueue<Runnable>(50),
+            Executors.defaultThreadFactory(),
+            new ThreadPoolExecutor.AbortPolicy());
+
     /**
      * MYTomcat程序init和启动
      *
      * @author Yuhaoran
      * @date 2022/1/15 12:38
      */
-    public void start() throws IOException {
+    public void start() throws Exception {
         //加载web.xml
         loadServlet();
         //===================BIO
-        ServerSocket serverSocket = new ServerSocket(port);
+        /*ServerSocket serverSocket = new ServerSocket(port);
         System.out.println("My_Tomcat Listening on port 8080");
         while (true) {
             Socket socket = serverSocket.accept();
@@ -58,11 +72,17 @@ public class BootStrap {
             OutputStream outputStream = socket.getOutputStream();
             Request request = new Request(inputStream);
             Response response = new Response(outputStream);
-            response.outPutHtml(request.getUrl());
+            if (servletMap.get(request.getUrl())==null){
+                response.outPutHtml(request.getUrl());
+            }else {
+                HttpServlet httpServlet = servletMap.get(request.getUrl());
+                httpServlet.service(request,response);
+            }
+
             socket.close();
-        }
+        }*/
         //==================NIO
-/*        ServerSocketChannel serverSocketChannel= ServerSocketChannel.open();
+        ServerSocketChannel serverSocketChannel= ServerSocketChannel.open();
         serverSocketChannel.bind(new InetSocketAddress(8080));
         serverSocketChannel.configureBlocking(false);
         Selector selector = Selector.open();
@@ -77,17 +97,12 @@ public class BootStrap {
                 SelectionKey key = iterator.next();
                 if (key.isAcceptable()){
                     SocketChannel socketChannel = serverSocketChannel.accept();
-                    socketChannel.configureBlocking(false);
-                    socketChannel.register(selector,SelectionKey.OP_READ);
-                    System.out.println(socketChannel.getRemoteAddress()+"发来请求");
-                    Request request = new Request(socketChannel);
-                    Response response = new Response(socketChannel);
-                    response.outPutHtmlByChannel(request.getUrl());
-                    socketChannel.close();
+                    RequestProcess requestProcess = new RequestProcess(socketChannel,servletMap,selector);
+                    threadPoolExecutor.execute(requestProcess);
                     iterator.remove();
                 }
             }
-        }*/
+        }
     }
 
     private Map<String,HttpServlet> servletMap = new HashMap<>();
@@ -137,7 +152,7 @@ public class BootStrap {
         BootStrap bootStrap = new BootStrap();
         try {
             bootStrap.start();
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }

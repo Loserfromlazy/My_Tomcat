@@ -40,8 +40,8 @@ public class Response {
     public void outPutHtml(String url) throws IOException {
         String absolutePath = StaticResourceUtil.getAbsolutePath(url);
         File file = new File(absolutePath);
-        FileInputStream inputStream = new FileInputStream(file);
         if (file.exists() && file.isFile()){
+            FileInputStream inputStream = new FileInputStream(file);
             //输出文件内容
             int count = 0;
             while (count == 0) {
